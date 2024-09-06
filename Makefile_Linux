@@ -1,0 +1,51 @@
+# Partition parse library
+CFLAGS	= -Wall -O -fpic -pthread -lcrypto -lsdrv-shm -lprop
+PTGLDFLAGS =  -pthread
+INC	= lib/include
+INCLUDEFLAGS = --include-directory=$(INC)
+OBJS	= 	partition_parser.o \
+			ab_partition_parser.o \
+			partition_remote_parser.o \
+			storage_device.o \
+			storage_remote_device.o \
+			syscall_interface.o \
+			slots_parse.o \
+			update_device.o \
+			crc32.o \
+			communication.o \
+			crypto_platform.o \
+			crypto_software.o \
+
+LIB_PATH = lib/
+APP_PATH = app/
+TEST_PATH = test/
+LIB	= libslots_parse.so
+OTA_TEST		= ota_test
+OTA_TEST_SUCCESS	= ota_mark_success
+OTA_SELF_TEST		= ota_self_test
+
+TARGETS	= $(LIB) $(OTA_TEST) $(OTA_TEST_SUCCESS) $(OTA_SELF_TEST)
+
+.PHONY:all
+all	: $(TARGETS)
+
+$(LIB): $(OBJS)
+	@$(CC) -fpic -shared -o $@ $^ $(LDFLAGS) $(PTGLDFLAGS)
+
+%.o: $(LIB_PATH)/%.c
+	@echo built is $@
+	@$(CC) -o $@ -c $< $(CFLAGS) $(INCLUDEFLAGS)
+$(OTA_TEST): $(APP_PATH)/sample.c $(APP_PATH)/wake_lock.c $(LIB)
+	@$(CC) -o $@ $^  -DSELF_TEST_MODE $(CFLAGS) $(INCLUDEFLAGS) $(LIB) $(PTGLDFLAGS)
+
+$(OTA_TEST_SUCCESS): $(APP_PATH)/sample_mark_success.c $(APP_PATH)/wake_lock.c $(LIB)
+	@$(CC) -o $@ $^ -DSELF_TEST_MODE  $(CFLAGS) $(INCLUDEFLAGS) $(LIB) $(PTGLDFLAGS)
+
+$(OTA_SELF_TEST): $(TEST_PATH)/self_test.c $(LIB)
+	@$(CC) -o $@ $^ -DSELF_TEST_MODE $(CFLAGS) $(INCLUDEFLAGS) $(LIB) $(PTGLDFLAGS)
+
+-include $(OBJS:.o=.d)
+
+.PHONY:clean
+clean:
+	@rm -f $(LIB) $(OTA_TEST) $(OTA_TEST_SUCCESS) $(OTA_SELF_TEST) *.o *.d *.d.*

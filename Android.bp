@@ -1,0 +1,110 @@
+// Copyright (C) 2017 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+cc_defaults {
+    name: "libslots_parse_defaults",
+    srcs: [
+        "lib/crc32.c",
+        "lib/storage_device.c",
+        "lib/storage_remote_device.c",
+        "lib/partition_parser.c",
+        "lib/partition_remote_parser.c",
+        "lib/ab_partition_parser.c",
+        "lib/slots_parse.c",
+        "lib/update_device.c",
+        "lib/syscall_interface.c",
+        "lib/communication.c",
+        "lib/crypto_software.c",
+        "lib/crypto_platform.c"
+    ],
+
+    export_include_dirs: ["lib/include"],
+
+    shared_libs: [
+        "libcutils",
+        "liblog",
+        "libutils",
+        "libcrypto",
+    ],
+
+    static_libs: [
+        "libsdrv-shm_static",
+    ],
+
+    local_include_dirs: [
+        "lib/include",
+    ],
+
+    target:{
+        android : {
+            cflags: ["-Werror","-Wno-unused-parameter","-DRUN_IN_ANDROID", "-DHAS_CRC=0" ],
+            static_libs: [
+                "libsdrv-rpmsg-channel_static"
+            ],
+        },
+
+        host : {
+            cflags: ["-Werror","-Wno-unused-parameter","-DRUN_IN_ANDROID","-DRUN_IN_HOST=1", "-DHAS_CRC=0" ],
+        },
+    },
+
+}
+
+cc_library_static {
+    defaults: ["libslots_parse_defaults"],
+    name: "libslots_parse_static",
+    recovery_available: true,
+    host_supported: true,
+}
+
+cc_library_shared {
+    defaults: ["libslots_parse_defaults"],
+    name: "libslots_parse",
+    vendor: true,
+    recovery_available: true,
+    host_supported: true,
+}
+
+cc_binary {
+    defaults: ["libslots_parse_defaults"],
+    name: "ota_test",
+    recovery_available: true,
+    vendor: true,
+    srcs: [
+        "app/sample.c",
+        "app/wake_lock_weak.c"
+    ],
+    cflags: ["-DSELF_TEST_MODE"],
+}
+
+cc_binary {
+    defaults: ["libslots_parse_defaults"],
+    name: "ota_mark_success",
+    vendor: true,
+    srcs: [
+        "app/sample_mark_success.c",
+        "app/wake_lock_weak.c"
+    ],
+    cflags: ["-DSELF_TEST_MODE"],
+}
+
+cc_binary {
+    defaults: ["libslots_parse_defaults"],
+    name: "ota_self_test",
+    vendor: true,
+    srcs: [
+        "test/self_test.c"
+    ],
+    cflags: ["-DSELF_TEST_MODE"],
+}
